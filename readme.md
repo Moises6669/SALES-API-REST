@@ -1,51 +1,81 @@
- <p align="center"><img src="https://laravel.com/assets/img/components/logo-laravel.svg"></p>
+ # Sales-API-REST
+ 
+- Diagrama relacional
+<img src="https://trello-attachments.s3.amazonaws.com/5b014dcaf4507eacfc1b4540/5b014de4bc1b8dcc70d83031/6a3a5051307f57b023a2cd7de15dd2ca/image.png" height="300" width="500">
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+- Todos los atributos que se pueden configurar en un modelo
+```
+<project>\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php
++-------------------------------+-------------------------------------+---------------------------------------+
+| protected $connection;        | protected $with = [];               | protected static $resolver;           |
+| protected $table;             | protected $withCount = [];          | protected static $dispatcher;         |
+| protected $primaryKey = 'id'; | protected $perPage = 15;            | protected static $booted = [];        |
+| protected $keyType = 'int';   | public $exists = false;             | protected static $globalScopes = [];  |
+| public $incrementing = true;  | public $wasRecentlyCreated = false; | protected static $ignoreOnTouch = []; |
++-------------------------------+-------------------------------------+---------------------------------------+
+```
+ [Controladores complejos que dependen de Seller](https://escuela.it/cursos/curso-de-desarrollo-de-api-restful-con-laravel/clase/controladores-complejos-que-dependen-de-seller)
+- **comando:** `$ php artisan make:controller Seller/SellerTransactionController -p Seller -m Transaction`
+- **postman:** `http://laravelapi:8000/sellers/15/transactions`
+```php
+//<project>/app/Http/Controllers/Seller/SellerTransactionController.php
+    $oCollection = $seller->products()  //products.seller_id = s.id
+            ->whereHas("transactions")  //products.id = transactions.product_id
+            ->with("transactions")      //transactions.*
+            ->get()
+            ->pluck("transactions")     //quita el indice asociativo
+            ->collapse()                //distinct transactions.*
+    ;
+    //dd($oCollection);
+    return $this->showAll($oCollection);
+```
+```sql
+-- las transacciones de un vendedor
+SELECT DISTINCT t.*
+,p.seller_id
+FROM transactions t
+INNER JOIN products p
+ON t.product_id = p.id
+WHERE 1=1
+AND p.seller_id = 15
+-- ORDER BY 7
 
-## About Laravel
++-----+---------------------+---------------------+----------+------------+----------+-----------+
+| id  |     created_at      |     updated_at      | quantity | product_id | buyer_id | seller_id |
++-----+---------------------+---------------------+----------+------------+----------+-----------+
+| 370 | 2018-08-23 22:52:01 | 2018-08-23 22:52:01 |        2 |        190 |      241 |        15 |
+| 806 | 2018-08-23 22:52:06 | 2018-08-23 22:52:06 |        1 |        190 |     1222 |        15 |
+| 853 | 2018-08-23 22:52:06 | 2018-08-23 22:52:06 |        1 |        190 |      894 |        15 |
++-----+---------------------+---------------------+----------+------------+----------+-----------+
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as:
+{"data":[
+    {"id":370,"created_at":"2018-08-23 22:52:01","updated_at":"2018-08-23 22:52:01","quantity":"2"
+    ,"product_id":"190","buyer_id":"241"},{"id":806,"created_at":"2018-08-23 22:52:06"
+    ,"updated_at":"2018-08-23 22:52:06","quantity":"1","product_id":"190","buyer_id":"1222"}
+    ,{"id":853,"created_at":"2018-08-23 22:52:06","updated_at":"2018-08-23 22:52:06","quantity":"1"
+    ,"product_id":"190","buyer_id":"894"}]}
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, yet powerful, providing tools needed for large, robust applications. A superb combination of simplicity, elegance, and innovation give you tools you need to build any application with which you are tasked.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough documentation and video tutorial library of any modern web application framework. The [Laravel documentation](https://laravel.com/docs) is thorough, complete, and makes it a breeze to get started learning the framework.
-
-If you're not in the mood to read, [Laracasts](https://laracasts.com) contains over 900 video tutorials on a range of topics including Laravel, modern PHP, unit testing, JavaScript, and more. Boost the skill level of yourself and your entire team by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for helping fund on-going Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](http://patreon.com/taylorotwell):
-
-- **[Vehikl](http://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[British Software Development](https://www.britishsoftware.co)**
-- **[Styde](https://styde.net)**
-- [Fragrantica](https://www.fragrantica.com)
-- [SOFTonSOFA](https://softonsofa.com/)
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](http://laravel.com/docs/contributions).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
+## DESPLIEGUE EN PRODUCCIÓN
+- Incluir archivo `usererrorhandler.php` si fuera necesario
+- [Instalar laravel en 1n1 uf4no ingles](http://www.uf4no.com/articles/guide-to-deploy-laravel-5-app-to-shared-hosting-1and1-9)
+- [Instalar laravel en 1n1 laracasts ingles](https://laracasts.com/discuss/channels/servers/install-laravel-in-1and1-servers)
+    - **comando: `$mkdir -p hello/goodbye`** **-p** indica que si no existe la carpeta padre la crea
+    - **comando: `ls -s`** **-s** crea un link **s**imbolico al archivo [`ls`](http://manpages.ubuntu.com/manpages/xenial/man1/ln.1.html)
+    - **comando: `source ~/.profile`** Ejecuta el archivo `.profile` que es parte de un bash
+    - **comando: `curl -sS https://getcomposer.org/installer | php`** El comando curl hace una transferencia de archivos `-s`: silent, `S`: show error `| php`: ???ni idea
+    - **comando: `php composer.phar install`**
+- Crear archivo: **.env**
+    - Retocar el dominio
+- Al ejecutar da **error**: `No application encryption key has been specified`
+- Ejecutar **comando:** `php artisan key:generate`
+    - Escribe en `.env`, `APP_KEY=base64:aNZ+S0Rq3xNuqHOemgYdh3jfEnXEQkox6IIID5VFbqs=`
+```ssh
+$ php artisan key:generate
+Application key [base64:aNZ+S0Rq3xNuqHOemgYdh3jfEnXEQkox6IIID5VFbqs=] set successfully.
+```
+```ssh
+# ejecutar 
+source ~/.profile
+php artisan tinker
+```
